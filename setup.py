@@ -14,7 +14,7 @@ def get_long_description():
 
 setup(
     name='lmnotify',
-    version='0.0.1',
+    version='0.0.1b',
     description='A package for sending notifications to LaMetric Time.',
     long_description=get_long_description(),
     url='https://github.com/keans/lmnotify',
@@ -35,7 +35,7 @@ setup(
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
     ],
-    keywords='python packaging',
+    keywords='LaMetric notification',
     packages=find_packages(
         exclude=['contrib', 'docs', 'tests']
     ),

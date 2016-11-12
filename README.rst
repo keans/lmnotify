@@ -61,6 +61,8 @@ As simple example, let's send a "hellow world" message with an icon to the LaMet
     # send the notification the device
     lmn.send_notification(model)
 
+For more examples see https://github.com/keans/lmnotify/tree/master/examples .
+
 
 Development
 -----------
@@ -77,10 +79,4 @@ To get started with the development:
     virtualenv env
     source env/bin/activate
     pip install -r requirements.txt
-
-
-Changelog
----------
-
-.. include:: CHANGELOG.rst
 
