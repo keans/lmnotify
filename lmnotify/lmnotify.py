@@ -4,48 +4,65 @@
 import os
 import sys
 import ConfigParser
-import base64
-import logging
 
 import requests
 from requests.auth import HTTPBasicAuth
 from oauthlib.oauth2 import BackendApplicationClient
 from requests_oauthlib import OAuth2Session
 
-log = logging.getLogger('requests_oauthlib')
-log.setLevel(logging.DEBUG)
+from const import CONFIG_FILE, CLOUD_URLS, DEVICE_URLS
 
-# default config file
-CONFIG_FILE = "~/.lmconfig"
-
-
-BASE_URL = "https://developer.lametric.com"
-
-# oauth2 token url
-OAUTH_TOKEN_URL = "%s/api/v2/oauth2/token" % BASE_URL
-
-GET_USER_URL = "%s/api/v2/users/me" % BASE_URL
-GET_DEVICES_URL = "%s/api/v2/users/me/devices" % BASE_URL
-
-# notifications url
-NOTIFICATION_URL = "https://%s:4343/api/v2/device/notifications"
+# disable InsecureRequestWarning: Unverified HTTPS request is being made.
+requests.packages.urllib3.disable_warnings()
 
 
-class LaMetricNotification(object):
+class LaMetricManager(object):
     """
     simple python class that allows the sending of notification
     messages to the LaMetric (https://www.lametric.com)
     """
     def __init__(self, config_file=CONFIG_FILE):
+        # set current device to none
+        self.dev = None
+
+        # load the config i.e. the LaMetric API details
         self.load_config(os.path.expanduser(config_file))
 
-        # create oauth2 session
+        # create oauth2 session that is required to access the cloud
         self.oauth = OAuth2Session(
             client=BackendApplicationClient(client_id=self.client_id)
         )
 
-        # get token
+        # get a current token
         self.get_token()
+
+    def _exec(self, cmd, url, json_data={}):
+        """
+        execute a command at the device
+        """
+        assert(cmd in ("GET", "POST", "PUT", "DELETE"))
+        assert(self.dev is not None)
+
+        # add device address to the URL
+        url = url % self.dev["ipv4_internal"]
+
+        # set basic authentication
+        auth = HTTPBasicAuth("dev", self.dev["api_key"])
+
+        r = None
+        if cmd == "GET":
+            r = self.oauth.get(url, auth=auth, verify=False)
+
+        elif cmd == "POST":
+            r = self.oauth.post(url, auth=auth, json=json_data, verify=False)
+
+        elif cmd == "PUT":
+            r = self.oauth.put(url, auth=auth, json=json_data, verify=False)
+
+        elif cmd == "DELETE":
+            r = self.oauth.delete(url, auth=auth, verify=False)
+
+        return r.json()
 
     def load_config(self, config_file):
         """
@@ -58,8 +75,6 @@ class LaMetricNotification(object):
             config.add_section("lametric")
             config.set("lametric", "client_id", "")
             config.set("lametric", "client_secret", "")
-            config.set("lametric", "redirect_url", "")
-            config.set("lametric", "auth_code", "")
             with open(config_file, "wb") as configfile:
                 config.write(configfile)
 
@@ -72,77 +87,173 @@ class LaMetricNotification(object):
         # read config file
         config.read(config_file)
 
+        # put config details to internal variables
         self.client_id = config.get("lametric", "client_id")
         self.client_secret = config.get("lametric", "client_secret")
-        self.redirect_url = config.get("lametric", "redirect_url")
-        self.auth_code = config.get("lametric", "auth_code")
 
+    def set_device(self, dev):
+        """
+        set the current device (that will be used for API calls)
+        """
+        self.dev = dev
+
+    # ----- rest api calls on cloud ------
     def get_token(self):
+        """
+        get current oauth token
+        """
         self.token = self.oauth.fetch_token(
-            token_url=OAUTH_TOKEN_URL,
+            token_url=CLOUD_URLS["get_token"][1],
             client_id=self.client_id,
             client_secret=self.client_secret
         )
 
     def get_user(self):
-
-        #base64.b64encode()
-
-        r = self.oauth.get(GET_USER_URL)
-        print r.json()
-
-    def get_devices(self):
-        r = self.oauth.get(GET_DEVICES_URL)
+        """
+        get the user details
+        """
+        r = self.oauth.get(CLOUD_URLS["get_user"][1])
         return r.json()
 
-    def get_notifications(self, dev):
-        r = self.oauth.get(
-            NOTIFICATION_URL % dev["ipv4_internal"],
-            auth=HTTPBasicAuth("dev", dev["api_key"]),
-            verify=False
-        )
-        print r.text
+    def get_devices(self):
+        """
+        get all devices that are linked to the user
+        """
+        r = self.oauth.get(CLOUD_URLS["get_devices"][1])
+        return r.json()
 
+    # ----- rest api calls on device ------
+    def get_endpoint_map(self):
+        """
+        returns API version and endpoint map
+        """
+        cmd, url = DEVICE_URLS["get_endpoint_map"]
+        return self._exec(cmd, url)
 
-    def send(self, dev, text, icon, priority="info", icon_type="info", lifetime=2000):
+    def get_device_state(self):
+        """
+        returns full device state
+        """
+        cmd, url = DEVICE_URLS["get_device_state"]
+        return self._exec(cmd, url)
+
+    def send_notification(
+        self, model, priority="warning", icon_type=None, lifetime=None
+    ):
+        """
+        sends new notification to device
+        """
         assert(priority in ("info", "warning", "critical"))
-        assert(priority in ("none", "info", "alert"))
-        #assert(lifetime)
+        assert(icon_type in (None, "none", "info", "alert"))
+        assert(lifetime is None or (lifetime > 0))
 
-        data = {
-            "model": {
-                "frames": [
-                    {
-                        "icon": icon,
-                        "text": text
-                    }
-                ]
-            },
-            "sound": {
-               "category": "notifications",
-               "id": "cat",
-               "repeat":1
-            },
-            "icon_type": icon_type,
-            "priority": priority,
-            "lifetime": lifetime
+        cmd, url = DEVICE_URLS["send_notification"]
+
+        json_data = {"model": model.json()}
+        json_data["priority"] = priority
+
+        if icon_type is not None:
+            json_data["icon_type"] = icon_type
+        if lifetime is not None:
+            json_data["lifetime"] = lifetime
+
+        return self._exec(cmd, url, json_data=json_data)
+
+    def get_notifications(self):
+        """
+        returns the list of notifications in queue
+        """
+        cmd, url = DEVICE_URLS["get_notifications_queue"]
+        return self._exec(cmd, url)
+
+    def get_current_notification(self):
+        """
+        returns current notification (notification that is visible)
+        """
+        cmd, url = DEVICE_URLS["get_current_notification"]
+        return self._exec(cmd, url)
+
+    def get_notification(self, notification_id):
+        """
+        returns specific notification
+        """
+        cmd, url = DEVICE_URLS["get_notification"]
+        return self._exec(cmd, url.replace(":id", notification_id))
+
+    def remove_notification(self, notification_id):
+        """
+        removes notification from queue or dismisses if it is visible
+        """
+        cmd, url = DEVICE_URLS["remove_notification"]
+        return self._exec(cmd, url.replace(":id", notification_id))
+
+    def get_display(self):
+        """
+        returns information about display, like brightness
+        """
+        cmd, url = DEVICE_URLS["get_display"]
+        return self._exec(cmd, url)
+
+    def set_display(self, brightness=100, brightness_mode="auto"):
+        """
+        allows to modify display state (change brightness)
+        """
+        assert(brightness_mode in ("auto", "manual"))
+        assert(brightness in range(101))
+
+        cmd, url = DEVICE_URLS["set_display"]
+        json_data = {
+            "brightness_mode": brightness_mode,
+            "brightness": brightness
         }
-        r = self.oauth.post(
-            NOTIFICATION_URL % dev["ipv4_internal"],
-            json=data, auth=HTTPBasicAuth("dev", dev["api_key"]),
-            verify=False
-        )
-        print r.text
 
+        return self._exec(cmd, url, json_data=json_data)
 
-def main():
-    lmn = LaMetricNotification()
-    user = lmn.get_user()
-    devices = lmn.get_devices()
-    dev = devices[0]
-    lmn.get_notifications(dev)
-    lmn.send(dev, "Good Night", "i120", lifetime=10000)
+    def get_volume(self):
+        """
+        returns current volume
+        """
+        cmd, url = DEVICE_URLS["get_volume"]
+        return self._exec(cmd, url)
 
+    def set_volume(self, volume=50):
+        """
+        allows to change volume
+        """
+        assert(volume in range(101))
 
-if __name__ == "__main__":
-    main()
+        cmd, url = DEVICE_URLS["set_volume"]
+        json_data = {
+            "volume": volume,
+        }
+
+        return self._exec(cmd, url, json_data=json_data)
+
+    def get_bluetooth_state(self):
+        """
+        returns bluetooth state
+        """
+        cmd, url = DEVICE_URLS["get_bluetooth_state"]
+        return self._exec(cmd, url)
+
+    def set_bluetooth(self, active=None, name=None):
+        """
+        allows to activate/deactivate bluetooth and change name
+        """
+        assert(active is not None or name is not None)
+
+        cmd, url = DEVICE_URLS["set_bluetooth"]
+        json_data = {}
+        if name is not None:
+            json_data["name"] = name
+        if active is not None:
+            json_data["active"] = active
+
+        return self._exec(cmd, url, json_data=json_data)
+
+    def get_wifi_state(self):
+        """
+        returns wi-fi state
+        """
+        cmd, url = DEVICE_URLS["get_wifi_state"]
+        return self._exec(cmd, url)

@@ -1,0 +1,2 @@
+# include additional documents such as readme files
+include *.rst *.txt
