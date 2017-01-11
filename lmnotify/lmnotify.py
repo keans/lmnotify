@@ -3,14 +3,14 @@
 
 import os
 import sys
-import ConfigParser
+import configparser
 
 import requests
 from requests.auth import HTTPBasicAuth
 from oauthlib.oauth2 import BackendApplicationClient
 from requests_oauthlib import OAuth2Session
 
-from const import CONFIG_FILE, CLOUD_URLS, DEVICE_URLS
+from lmnotify.const import CONFIG_FILE, CLOUD_URLS, DEVICE_URLS
 
 # disable InsecureRequestWarning: Unverified HTTPS request is being made.
 requests.packages.urllib3.disable_warnings()
@@ -69,13 +69,11 @@ class LaMetricManager(object):
         load the config from the config file or create a template
         if it is not existing yet
         """
-        config = ConfigParser.ConfigParser()
+        config = configparser.ConfigParser()
         if not os.path.exists(config_file):
             # config file does not exist => create template
-            config.add_section("lametric")
-            config.set("lametric", "client_id", "")
-            config.set("lametric", "client_secret", "")
-            with open(config_file, "wb") as configfile:
+            config['lametric'] = {'client_id': '', 'client_secret': ''}
+            with open(config_file, "w") as configfile:
                 config.write(configfile)
 
             sys.exit(
