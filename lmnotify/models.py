@@ -1,4 +1,4 @@
-from lmnotify.const import SOUND_IDS, ALARM_IDS
+from .const import SOUND_IDS, ALARM_IDS
 
 
 class Frame(object):

@@ -3,5 +3,5 @@ __all__ = [
     "Sound", "Model"
 ]
 
-from lmnotify.lmnotify import LaMetricManager
-from lmnotify.models import SimpleFrame, GoalFrame, SpikeChart, Sound, Model
+from .lmnotify import LaMetricManager
+from .models import SimpleFrame, GoalFrame, SpikeChart, Sound, Model

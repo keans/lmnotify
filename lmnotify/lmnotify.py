@@ -10,7 +10,7 @@ from requests.auth import HTTPBasicAuth
 from oauthlib.oauth2 import BackendApplicationClient
 from requests_oauthlib import OAuth2Session
 
-from lmnotify.const import CONFIG_FILE, CLOUD_URLS, DEVICE_URLS
+from .const import CONFIG_FILE, CLOUD_URLS, DEVICE_URLS
 
 # disable InsecureRequestWarning: Unverified HTTPS request is being made.
 requests.packages.urllib3.disable_warnings()
