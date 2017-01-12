@@ -12,6 +12,18 @@ The easiest way for installing ``lmnotify`` is via ``pip``:
 ::
 
     pip install lmnotify
+    
+or clone/download this repository and
+
+::
+
+    python3 setup.py install
+
+or
+
+::
+
+    python setup.py install
 
 
 Config

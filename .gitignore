@@ -4,3 +4,4 @@
 env/
 lmnotify.egg-info/
 dist/
+build/

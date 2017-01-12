@@ -3,6 +3,8 @@
 
 from lmnotify import LaMetricManager
 
+from pprint import pprint
+
 
 def main():
     lmn = LaMetricManager()
@@ -10,11 +12,14 @@ def main():
     # --- test cloud ---
 
     # get the user
-    print "USER", lmn.get_user(), "\n"
+    print ("USER\n")
+    pprint(lmn.get_user(), indent=2)
 
     # get devices
+    
     devices = lmn.get_devices()
-    print "DEVICES", devices, "\n"
+    print ("\nDEVICES\n")
+    pprint(devices, indent=2)
 
     # --- test local device ---
 
@@ -22,22 +27,28 @@ def main():
     lmn.set_device(devices[0])
 
     # get all available API endpoints
-    print "ENDPOINTS", lmn.get_endpoint_map(), "\n"
+    print ("\nENDPOINTS\n")
+    pprint(lmn.get_endpoint_map(),indent=2)
 
     # get the state of the device
-    print "DEVICE", lmn.get_device_state(), "\n"
+    print ("\nDEVICE\n")
+    pprint(lmn.get_device_state(),indent=2)
 
     # get display brightness
-    print "DISPLAY", lmn.get_display(), "\n"
+    print ("\nDISPLAY\n")
+    pprint(lmn.get_display(), indent=2)
 
     # get the volume
-    print "VOLUME", lmn.get_volume(), "\n"
+    print ("\nVOLUME\n")
+    pprint(lmn.get_volume(), indent=2)
 
     # get the bluetooth state
-    print "BLUETOOTH", lmn.get_bluetooth_state(), "\n"
+    print ("\nBLUETOOTH\n")
+    pprint(lmn.get_bluetooth_state(), indent=2)
 
     # get the wifi state
-    print "WIFI", lmn.get_wifi_state()
+    print ("\nWIFI\n")
+    pprint(lmn.get_wifi_state(), indent=2)
 
 
 if __name__ == "__main__":

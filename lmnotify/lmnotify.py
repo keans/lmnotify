@@ -3,14 +3,15 @@
 
 import os
 import sys
-import ConfigParser
+import configparser
 
 import requests
 from requests.auth import HTTPBasicAuth
 from oauthlib.oauth2 import BackendApplicationClient
 from requests_oauthlib import OAuth2Session
 
-from const import CONFIG_FILE, CLOUD_URLS, DEVICE_URLS
+from .const import CONFIG_FILE, CLOUD_URLS, DEVICE_URLS
+from .models import AppModel
 
 # disable InsecureRequestWarning: Unverified HTTPS request is being made.
 requests.packages.urllib3.disable_warnings()
@@ -24,7 +25,10 @@ class LaMetricManager(object):
     def __init__(self, config_file=CONFIG_FILE):
         # set current device to none
         self.dev = None
-
+        
+        # list of installed apps
+        self.available_apps = []
+        
         # load the config i.e. the LaMetric API details
         self.load_config(os.path.expanduser(config_file))
 
@@ -35,6 +39,7 @@ class LaMetricManager(object):
 
         # get a current token
         self.get_token()
+        
 
     def _exec(self, cmd, url, json_data={}):
         """
@@ -69,13 +74,11 @@ class LaMetricManager(object):
         load the config from the config file or create a template
         if it is not existing yet
         """
-        config = ConfigParser.ConfigParser()
+        config = configparser.ConfigParser()
         if not os.path.exists(config_file):
             # config file does not exist => create template
-            config.add_section("lametric")
-            config.set("lametric", "client_id", "")
-            config.set("lametric", "client_secret", "")
-            with open(config_file, "wb") as configfile:
+            config['lametric'] = {'client_id': '', 'client_secret': ''}
+            with open(config_file, "w") as configfile:
                 config.write(configfile)
 
             sys.exit(
@@ -96,6 +99,7 @@ class LaMetricManager(object):
         set the current device (that will be used for API calls)
         """
         self.dev = dev
+        self.get_apps_list()
 
     # ----- rest api calls on cloud ------
     def get_token(self):
@@ -257,3 +261,22 @@ class LaMetricManager(object):
         """
         cmd, url = DEVICE_URLS["get_wifi_state"]
         return self._exec(cmd, url)
+        
+    def get_apps_list(self):
+        """
+        gets installed apps and puts them into the available_apps list
+        """
+        cmd, url = DEVICE_URLS["get_apps_list"]
+        result = self._exec(cmd, url)
+        
+        self.available_apps = []
+        for app in result:
+            temp_app = AppModel(app, result[app])
+            self.available_apps.append(temp_app)
+        
+    def get_available_apps(self):
+        """
+        returns list of available apps
+        """
+        return self.available_apps
+        
