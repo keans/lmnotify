@@ -67,6 +67,10 @@ DEVICE_URLS = {
     "get_wifi_state": (
         "GET", "https://%s:4343/api/v2/device/wifi"
     ),
+    # Returns list of installed apps
+    "get_apps_list": (
+        "GET", "https://%s:4343/api/v2/device/apps/"
+    ),
 }
 
 
@@ -125,3 +129,14 @@ ALARM_IDS = (
     "alarm12",
     "alarm13"
 )
+
+# available properties of an app
+
+AVAILABLE_APP_PROPERTIES = [
+    'package',
+    'vendor',
+    'version',
+    'version_code',
+    'widgets',
+    'actions'
+]
