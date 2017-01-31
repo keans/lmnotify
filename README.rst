@@ -58,12 +58,6 @@ As simple example, let's send a "hellow world" message with an icon to the LaMet
     # use first device to do some tests
     lmn.set_device(devices[0])
 
-    # obtain all registered devices from the LaMetric cloud
-    devices = lmn.get_devices()
-
-    # select the first device for interaction
-    lmn.set_device(devices[0])
-
     # prepare a simple frame with an icon and some text
     sf = SimpleFrame("i210", "Hello World!")
 

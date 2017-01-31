@@ -1,22 +1,35 @@
-from .const import SOUND_IDS, ALARM_IDS, AVAILABLE_APP_PROPERTIES
+from .const import SOUND_IDS, ALARM_IDS
+
 
 
 class AppModel(object):
     """
     class representing a installed app on the LaMetric
     """
-    def __init__(self, app_id, data):
-        self.app_id = app_id
-        self.properties = dict.fromkeys(AVAILABLE_APP_PROPERTIES)
-        self.set_properties(data)
 
-    def set_properties(self, data):
-        for property in self.properties.keys():
-            if property in data.keys():
-                self.properties[property] = data[property]
-
-    def get_properties(self):
-        return self.properties
+    def __init__(self, data):
+        self.actions = {}
+        self.package = ''
+        self.vendor = ''
+        self.version = ''
+        self.version_code = ''
+        self.widgets = ''
+        
+        self._set_properties(data)
+                
+    def _set_properties(self, data):
+        if 'actions' in data.keys():
+            self.actions = data['actions']
+        if 'package' in data.keys():
+            self.package = data['package']
+        if 'vendor' in data.keys():
+            self.vendor = data['vendor']
+        if 'version' in data.keys():
+            self.version = data['version']
+        if 'version_code' in data.keys():
+            self.version_code = data['version_code']
+        if 'widgets' in data.keys():
+            self.widgets = data['widgets']
 
 
 class Frame(object):
@@ -110,7 +123,9 @@ class Model(object):
     """
     a model can consist of multiple frames and a sound
     """
-    def __init__(self, frames=[], cycles=1, sound=None):
+    def __init__(self, frames=None, cycles=1, sound=None):
+        if frames is None:
+            frames = []
         assert(cycles >= 0)
         assert(sound is None or isinstance(sound, Sound))
 

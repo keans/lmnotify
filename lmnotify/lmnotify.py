@@ -26,6 +26,13 @@ class LaMetricManager(object):
         # set current device to none
         self.dev = None
 
+        # store the result of the last call
+        self.result = None
+
+        self.client_id = ""
+        self.client_secret = ""
+        self.token = ""
+
         # list of installed apps
         self.available_apps = []
 
@@ -40,10 +47,12 @@ class LaMetricManager(object):
         # get a current token
         self.get_token()
 
-    def _exec(self, cmd, url, json_data={}):
+    def _exec(self, cmd, url, json_data=None):
         """
         execute a command at the device
         """
+        if json_data is None:
+            json_data = {}
         assert(cmd in ("GET", "POST", "PUT", "DELETE"))
         assert(self.dev is not None)
 
@@ -98,7 +107,23 @@ class LaMetricManager(object):
         set the current device (that will be used for API calls)
         """
         self.dev = dev
-        self.get_apps_list()
+        self.set_apps_list()
+        
+    def _get_widget_id(self, package_name):
+        """
+        returns widget_id for given package_name - does not care about multiple widget ids at the moment
+
+        :param package_name: package to check for
+        :type package_name: str
+        :return: id of first widget which belongs to the given package_name
+        :rtype: str
+        """
+        widget_id = ""
+        for app in self.get_apps_list():
+            if app.package == package_name:
+                widget_id = list(app.widgets.keys())[0]
+    
+        return widget_id
 
     # ----- rest api calls on cloud ------
     def get_token(self):
@@ -152,8 +177,7 @@ class LaMetricManager(object):
 
         cmd, url = DEVICE_URLS["send_notification"]
 
-        json_data = {"model": model.json()}
-        json_data["priority"] = priority
+        json_data = {"model": model.json(), "priority": priority}
 
         if icon_type is not None:
             json_data["icon_type"] = icon_type
@@ -261,7 +285,8 @@ class LaMetricManager(object):
         cmd, url = DEVICE_URLS["get_wifi_state"]
         return self._exec(cmd, url)
 
-    def get_apps_list(self):
+    # ----- rest api calls for app control on device ------   
+    def set_apps_list(self):
         """
         gets installed apps and puts them into the available_apps list
         """
@@ -270,11 +295,119 @@ class LaMetricManager(object):
 
         self.available_apps = []
         for app in result:
-            temp_app = AppModel(app, result[app])
+            temp_app = AppModel(result[app])
             self.available_apps.append(temp_app)
 
-    def get_available_apps(self):
+    def get_apps_list(self):
         """
         returns list of available apps
         """
         return self.available_apps
+
+    def switch_to_app(self, package):
+        """
+        activate an app that is specified by package. Selects the first app it finds in the app list
+
+        :param package: name of package/app
+        :type package: str
+        :return: None
+        :rtype: None
+        """
+        cmd, url = DEVICE_URLS["switch_to_app"]
+        widget_id = self._get_widget_id(package)
+
+        url %= '%s', package, widget_id
+        
+        self.result = self._exec(cmd, url)
+        
+    def switch_to_next_app(self):
+        """
+        switches to next app
+        """
+        cmd, url = DEVICE_URLS["switch_to_next_app"]
+        self.result = self._exec(cmd, url)
+    
+    def switch_to_prev_app(self):
+        """
+        switches to previous app
+        """
+        cmd, url = DEVICE_URLS["switch_to_prev_app"]
+        self.result = self._exec(cmd, url)
+
+    def _app_exec(self, package, action, params=None):
+        """
+        meta method for all interactions with apps
+
+        :param package: name of package/app
+        :type package: str
+        :param action: the action to be executed
+        :type action: str
+        :param params: optional parameters for this action
+        :type params: dict
+        :return: None
+        :rtype: None
+        """
+
+        # get list of possible commands from app.actions
+        allowed_commands = []
+        for app in self.get_apps_list():
+            if app.package == package:
+                allowed_commands = list(app.actions.keys())
+
+        # check if action is in this list
+        assert(action in allowed_commands)
+
+        cmd, url = DEVICE_URLS["do_action"]
+
+        # get widget id for the package
+        widget_id = self._get_widget_id(package)
+        url %= '%s', package, widget_id
+
+        json_data = {"id": action}
+        if params is not None:
+            json_data["params"] = params
+        self.result = self._exec(cmd, url, json_data=json_data)
+
+    def radio_play(self):
+        self._app_exec("com.lametric.radio", "radio.play")
+
+    def radio_stop(self):
+        self._app_exec("com.lametric.radio", "radio.stop")
+
+    def radio_prev(self):
+        self._app_exec("com.lametric.radio", "radio.prev")
+
+    def radio_next(self):
+        self._app_exec("com.lametric.radio", "radio.next")
+    
+    def alarm_set(self, time, wake_with_radio=False):
+        # TODO: check for correct time format
+
+        params = {"enabled": True, "time": time, "wake_with_radio": wake_with_radio}
+        self._app_exec("com.lametric.clock", "clock.alarm", params=params)
+    
+    def alarm_disable(self):
+        params = {"enabled": False}
+        self._app_exec("com.lametric.clock", "clock.alarm", params=params)
+
+    def countdown_start(self):
+        self._app_exec("com.lametric.countdown", "countdown.start")
+
+    def countdown_pause(self):
+        self._app_exec("com.lametric.countdown", "countdown.pause")
+
+    def countdown_reset(self):
+        self._app_exec("com.lametric.countdown", "countdown.reset")
+
+    def countdown_set(self, duration, start_now):
+        params = {'duration': duration, 'start_now': start_now}
+        self._app_exec("com.lametric.countdown", "countdown.configure", params)
+
+    def stopwatch_start(self):
+        self._app_exec("com.lametric.stopwatch", "stopwatch.start")
+
+    def stopwatch_pause(self):
+        self._app_exec("com.lametric.stopwatch", "stopwatch.pause")
+
+    def stopwatch_reset(self):
+        self._app_exec("com.lametric.stopwatch", "stopwatch.reset")
