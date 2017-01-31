@@ -5,6 +5,7 @@ import os
 # get current directory
 here = os.path.abspath(os.path.dirname(__file__))
 
+
 def get_long_description():
     """
     get long description from README.rst file
@@ -12,9 +13,10 @@ def get_long_description():
     with codecs.open(os.path.join(here, "README.rst"), "r", "utf-8") as f:
         return f.read()
 
+
 setup(
     name='lmnotify',
-    version='0.0.2b',
+    version='0.0.3',
     description='A package for sending notifications to LaMetric Time.',
     long_description=get_long_description(),
     url='https://github.com/keans/lmnotify',

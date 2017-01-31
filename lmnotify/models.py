@@ -5,7 +5,6 @@ class AppModel(object):
     """
     class representing a installed app on the LaMetric
     """
-
     def __init__(self, data):
         self.actions = {}
         self.package = ''
@@ -13,22 +12,16 @@ class AppModel(object):
         self.version = ''
         self.version_code = ''
         self.widgets = ''
-        
+
         self._set_properties(data)
-                
+
     def _set_properties(self, data):
-        if 'actions' in data.keys():
-            self.actions = data['actions']
-        if 'package' in data.keys():
-            self.package = data['package']
-        if 'vendor' in data.keys():
-            self.vendor = data['vendor']
-        if 'version' in data.keys():
-            self.version = data['version']
-        if 'version_code' in data.keys():
-            self.version_code = data['version_code']
-        if 'widgets' in data.keys():
-            self.widgets = data['widgets']
+        """
+        set the properties of the app model by the given data dict
+        """
+        for property in data.keys():
+            if property in vars(self):
+                setattr(self, property, data[property])
 
 
 class Frame(object):

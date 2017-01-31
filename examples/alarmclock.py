@@ -19,7 +19,7 @@ def main():
     # set alarm and enable alarm with radio
     lmn.alarm_set(wake_me, wake_with_radio=True)
 
-    print("Don't forget to turn the alarm off")
+    print("Don't forget to turn the alarm off.")
 
 
 if __name__ == "__main__":
