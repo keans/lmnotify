@@ -71,6 +71,10 @@ DEVICE_URLS = {
     "get_apps_list": (
         "GET", "https://%s:4343/api/v2/device/apps/"
     ),
+    # Switch to specific app
+    "switch_to_app": (
+        "PUT", "https://%s:4343/api/v2/device/apps/%s/widgets/%s/activate"
+    ),
     # Switch to next app
     "switch_to_next_app": (
         "PUT", "https://%s:4343/api/v2/device/apps/next"

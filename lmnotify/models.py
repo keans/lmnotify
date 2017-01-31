@@ -1,4 +1,5 @@
-from .const import SOUND_IDS, ALARM_IDS, AVAILABLE_APP_PROPERTIES
+from .const import SOUND_IDS, ALARM_IDS
+
 
 class AppModel(object):
     """
@@ -120,7 +121,9 @@ class Model(object):
     """
     a model can consist of multiple frames and a sound
     """
-    def __init__(self, frames=[], cycles=1, sound=None):
+    def __init__(self, frames=None, cycles=1, sound=None):
+        if frames is None:
+            frames = []
         assert(cycles >= 0)
         assert(sound is None or isinstance(sound, Sound))
 
