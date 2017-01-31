@@ -99,7 +99,18 @@ class LaMetricManager(object):
         set the current device (that will be used for API calls)
         """
         self.dev = dev
-        self.get_apps_list()
+        self.set_apps_list()
+        
+    def _get_widget_id(self, package_name):
+        '''
+        returns widget_id for given package_name - does not care about multiple widget ids at the moment
+        '''
+        widget_id = ""
+        for app in self.get_apps_list():
+            if app.package == package_name:
+                widget_id = list(app.widgets.keys())[0]
+    
+        return widget_id
 
     # ----- rest api calls on cloud ------
     def get_token(self):
@@ -262,7 +273,7 @@ class LaMetricManager(object):
         cmd, url = DEVICE_URLS["get_wifi_state"]
         return self._exec(cmd, url)
         
-    def get_apps_list(self):
+    def set_apps_list(self):
         """
         gets installed apps and puts them into the available_apps list
         """
@@ -271,12 +282,153 @@ class LaMetricManager(object):
         
         self.available_apps = []
         for app in result:
-            temp_app = AppModel(app, result[app])
+            temp_app = AppModel(result[app])
             self.available_apps.append(temp_app)
         
-    def get_available_apps(self):
+    def get_apps_list(self):
         """
         returns list of available apps
         """
         return self.available_apps
+        
+    def switch_to_next_app(self):
+        """
+        switches to next app
+        """
+        cmd, url = DEVICE_URLS["switch_to_next_app"]
+        result = self._exec(cmd, url)
+    
+    def switch_to_prev_app(self):
+        """
+        switches to previous app
+        """
+        cmd, url = DEVICE_URLS["switch_to_prev_app"]
+        result = self._exec(cmd, url)
+        
+    def radio_action(self, action):
+        """
+        pass action variable to control the radio:
+            - play
+            - stop
+            - prev
+            - next
+        """
+        assert(action in ("play", "stop", "prev", "next"))
+        
+        action = "radio.{0}".format(action)
+        
+        cmd, url = DEVICE_URLS["do_action"]
+    
+        #get widget id for com.lametric.radio
+        widget_id = self._get_widget_id('com.lametric.radio')
+        url = url % ('%s', 'com.lametric.radio', widget_id)  
+        
+        json_data = {}
+        json_data["id"] = action
+        result = self._exec(cmd, url, json_data=json_data)
+        return result
+    
+    def alarm_set(self, time, wake_with_radio=False):
+        """
+        method to set an alarm at TIME (format: HH:MM)
+        """
+        
+        action = "clock.alarm"
+        
+        # TODO: check for correct time format
+        # 
+        
+        cmd, url = DEVICE_URLS["do_action"]
+    
+        #get widget id for com.lametric.radio
+        widget_id = self._get_widget_id('com.lametric.clock')
+        url = url % ('%s', 'com.lametric.clock', widget_id)  
+        
+        json_data = {}
+        json_data["id"] = action
+        params = {}
+        params["enabled"] = True
+        params["time"] = time
+        params["wake_with_radio"] = wake_with_radio
+        
+        json_data["params"] = params
+        result = self._exec(cmd, url, json_data=json_data)
+        
+        return result
+    
+    def alarm_disable(self):
+        action = "clock.alarm"
+        cmd, url = DEVICE_URLS["do_action"]
+        
+        #get widget id for com.lametric.radio
+        widget_id = self._get_widget_id('com.lametric.clock')
+        url = url % ('%s', 'com.lametric.clock', widget_id)
+        
+        json_data = {}
+        json_data["id"] = action
+        params = {}
+        params["enabled"] = False
+        json_data["params"] = params
+        result = self._exec(cmd, url, json_data=json_data)
+        
+        return result
+        
+    def countdown_set(self, duration, start_now=False):
+        '''
+        set countdown
+            - duration: countdown in seconds
+            - start_now: start countdown immediately after request True/False
+        '''
+        
+        action = "countdown.configure"
+        cmd, url = DEVICE_URLS["do_action"]
+        widget_id = self._get_widget_id('com.lametric.countdown')
+        url = url % ('%s', 'com.lametric.countdown', widget_id)
+        
+        json_data = {}
+        json_data["id"] = action
+        params = {}
+        params['duration'] = duration
+        params['start_now'] = start_now
+        json_data['params'] = params
+        
+        result = self._exec(cmd, url, json_data=json_data)
+        return result
+        
+    def countdown_action(self, action):
+        '''
+            start, pause or reset countdown via the action variable  
+        '''
+        assert(action in ("pause", "reset", "start"))
+    
+        action = "countdown.{0}".format(action)
+    
+        cmd, url = DEVICE_URLS["do_action"]
+
+        #get widget id for com.lametric.radio
+        widget_id = self._get_widget_id('com.lametric.countdown')
+        url = url % ('%s', 'com.lametric.countdown', widget_id)  
+    
+        json_data = {}
+        json_data["id"] = action
+        result = self._exec(cmd, url, json_data=json_data)
+        return result 
+        
+    def stopwatch_action(self, action):
+        '''
+            start, stop or reset the stopwatch
+        '''
+        assert(action in ("pause", "reset", "start"))
+        
+        action = "stopwatch.{0}".format(action)
+        cmd, url = DEVICE_URLS["do_action"]
+
+        #get widget id for com.lametric.radio
+        widget_id = self._get_widget_id('com.lametric.stopwatch')
+        url = url % ('%s', 'com.lametric.stopwatch', widget_id)  
+    
+        json_data = {}
+        json_data["id"] = action
+        result = self._exec(cmd, url, json_data=json_data)
+        return result
         
