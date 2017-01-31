@@ -12,13 +12,13 @@ def main():
     # --- test cloud ---
 
     # get the user
-    print ("USER\n")
+    print("USER\n")
     pprint(lmn.get_user(), indent=2)
 
     # get devices
-    
+
     devices = lmn.get_devices()
-    print ("\nDEVICES\n")
+    print("\nDEVICES\n")
     pprint(devices, indent=2)
 
     # --- test local device ---
@@ -27,27 +27,27 @@ def main():
     lmn.set_device(devices[0])
 
     # get all available API endpoints
-    print ("\nENDPOINTS\n")
-    pprint(lmn.get_endpoint_map(),indent=2)
+    print("\nENDPOINTS\n")
+    pprint(lmn.get_endpoint_map(), indent=2)
 
     # get the state of the device
-    print ("\nDEVICE\n")
-    pprint(lmn.get_device_state(),indent=2)
+    print("\nDEVICE\n")
+    pprint(lmn.get_device_state(), indent=2)
 
     # get display brightness
-    print ("\nDISPLAY\n")
+    print("\nDISPLAY\n")
     pprint(lmn.get_display(), indent=2)
 
     # get the volume
-    print ("\nVOLUME\n")
+    print("\nVOLUME\n")
     pprint(lmn.get_volume(), indent=2)
 
     # get the bluetooth state
-    print ("\nBLUETOOTH\n")
+    print("\nBLUETOOTH\n")
     pprint(lmn.get_bluetooth_state(), indent=2)
 
     # get the wifi state
-    print ("\nWIFI\n")
+    print("\nWIFI\n")
     pprint(lmn.get_wifi_state(), indent=2)
 
 

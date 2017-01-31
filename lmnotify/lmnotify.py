@@ -25,10 +25,10 @@ class LaMetricManager(object):
     def __init__(self, config_file=CONFIG_FILE):
         # set current device to none
         self.dev = None
-        
+
         # list of installed apps
         self.available_apps = []
-        
+
         # load the config i.e. the LaMetric API details
         self.load_config(os.path.expanduser(config_file))
 
@@ -39,7 +39,6 @@ class LaMetricManager(object):
 
         # get a current token
         self.get_token()
-        
 
     def _exec(self, cmd, url, json_data={}):
         """
@@ -261,22 +260,21 @@ class LaMetricManager(object):
         """
         cmd, url = DEVICE_URLS["get_wifi_state"]
         return self._exec(cmd, url)
-        
+
     def get_apps_list(self):
         """
         gets installed apps and puts them into the available_apps list
         """
         cmd, url = DEVICE_URLS["get_apps_list"]
         result = self._exec(cmd, url)
-        
+
         self.available_apps = []
         for app in result:
             temp_app = AppModel(app, result[app])
             self.available_apps.append(temp_app)
-        
+
     def get_available_apps(self):
         """
         returns list of available apps
         """
         return self.available_apps
-        

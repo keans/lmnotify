@@ -1,5 +1,6 @@
 from .const import SOUND_IDS, ALARM_IDS, AVAILABLE_APP_PROPERTIES
 
+
 class AppModel(object):
     """
     class representing a installed app on the LaMetric
@@ -8,12 +9,12 @@ class AppModel(object):
         self.app_id = app_id
         self.properties = dict.fromkeys(AVAILABLE_APP_PROPERTIES)
         self.set_properties(data)
-        
+
     def set_properties(self, data):
         for property in self.properties.keys():
             if property in data.keys():
                 self.properties[property] = data[property]
-                
+
     def get_properties(self):
         return self.properties
 
