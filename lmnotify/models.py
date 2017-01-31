@@ -1,7 +1,6 @@
 from .const import SOUND_IDS, ALARM_IDS
 
 
-
 class AppModel(object):
     """
     class representing a installed app on the LaMetric
