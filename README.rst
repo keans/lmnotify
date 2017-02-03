@@ -31,7 +31,8 @@ Config
 
 The LaMetric Time can only be accessed by authorized applications. Therefore, each application that wants to access the LaMetric time needs to be registered at the `LaMetric Developer <https://developer.lametric.com>`_ webpage. Sign Up and login to the developer webpage. Click the **Create** button in the upper right corner, then select **Notification App** and click **Create** again. Enter an app name, a description and a redirect URL. Finally, click **Save** to create the application. For the newly created app you will obtain a **client id** and a **client secret** that is required in the following.
 
-The obtained credentials must be stored in the ``~/.lmconfig`` config file so that ``lmnotify`` can access it.
+The obtained credentials can be stored in the ``~/.lmconfig`` config file so that ``lmnotify`` can access it. You can also pass the two
+parameters directly into the constructor.
 
 ::
 
