@@ -22,7 +22,7 @@ class LaMetricManager(object):
     simple python class that allows the sending of notification
     messages to the LaMetric (https://www.lametric.com)
     """
-    def __init__(self, config_file=CONFIG_FILE):
+    def __init__(self, config_file=CONFIG_FILE, client_id=None, client_secret=None):
         # set current device to none
         self.dev = None
 
@@ -36,8 +36,13 @@ class LaMetricManager(object):
         # list of installed apps
         self.available_apps = []
 
-        # load the config i.e. the LaMetric API details
-        self.load_config(os.path.expanduser(config_file))
+        # if client_id or client_secret are not passed into the constructor
+        if client_id is None or client_secret is None:
+            # load the config i.e. the LaMetric API details
+            self.load_config(os.path.expanduser(config_file))
+        else:
+            self.client_id = client_id
+            self.client_secret = client_secret
 
         # create oauth2 session that is required to access the cloud
         self.oauth = OAuth2Session(
