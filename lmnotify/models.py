@@ -94,7 +94,7 @@ class Sound(object):
     """
     def __init__(self, category, sound_id, repeat=1):
         assert(
-            (category == "notification" and (sound_id in SOUND_IDS)) or
+            (category == "notifications" and (sound_id in SOUND_IDS)) or
             (category == "alarms" and (sound_id in ALARM_IDS))
         )
         assert(repeat > 0)
