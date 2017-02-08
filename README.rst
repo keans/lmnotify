@@ -12,7 +12,7 @@ The easiest way for installing ``lmnotify`` is via ``pip``:
 ::
 
     pip install lmnotify
-    
+
 or clone/download this repository and
 
 ::
@@ -31,8 +31,37 @@ Config
 
 The LaMetric Time can only be accessed by authorized applications. Therefore, each application that wants to access the LaMetric time needs to be registered at the `LaMetric Developer <https://developer.lametric.com>`_ webpage. Sign Up and login to the developer webpage. Click the **Create** button in the upper right corner, then select **Notification App** and click **Create** again. Enter an app name, a description and a redirect URL. Finally, click **Save** to create the application. For the newly created app you will obtain a **client id** and a **client secret** that is required in the following.
 
-The obtained credentials can be stored in the ``~/.lmconfig`` config file so that ``lmnotify`` can access it. You can also pass the two
-parameters directly into the constructor.
+There are three different ways to provide the LaMetric API credentials to the module: by constructor, by environment variables, by config file.
+
+By constructor
+~~~~~~~~~~~~~~
+
+Just provide the ``client_id`` and ``client_secret`` in the constructor of the ``LaMetricManager`` class, e.g.:
+
+::
+
+    CLIENT_ID = "<my_client_id>"
+    CLIENT_SECRET = "<my_client_secret>"
+
+    lmn = LaMetricManager(client_id=CLIENT_ID, client_secret=CLIENT_SECRET)
+
+By environment variables
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Just set the ``LAMETRIC_CLIENT_ID`` and the ``LAMETRIC_CLIENT_SECRET`` environment variable, e.g. in bash:
+
+::
+
+    export LAMETRIC_CLIENT_ID="<my_client_id>"
+    export LAMETRIC_CLIENT_SECRET="<my_client_secret>"
+
+When not providing the ``client_id`` and ``client_secret`` in the constructor, the environment variables will be used instead.
+
+
+By config file
+~~~~~~~~~~~~~~
+
+The default config file is set to ``~/.lmconfig``. When initializing the ``LaMetricManager`` class without parameters an empty config file will be created that looks like:
 
 ::
 
@@ -40,7 +69,8 @@ parameters directly into the constructor.
     client_id = <put the client id here>
     client_secret = <put the client secret here>
 
-This information will be read by ``lmnotify``.
+Just provide the corresponding LaMetric credentials and on next start the config file will be read automatically, when neither ``client_id`` and ``client_secret`` are set in the constructor nor the ``LAMETRIC_CLIENT_ID`` and the ``LAMETRIC_CLIENT_SECRET`` environment variables are set.
+
 
 Example
 -------
@@ -51,12 +81,17 @@ As simple example, let's send a "hellow world" message with an icon to the LaMet
 
     from lmnotify import LaMetricManager, Model, SimpleFrame
 
-    lmn = LaMetricManager()
+    # set your LaMetric API credentials here!
+    CLIENT_ID = "<my_client_id>"
+    CLIENT_SECRET = "<my_client_secret>"
 
-    # get devices
+    # create an instance of the LaMetricManager
+    lmn = LaMetricManager(client_id=CLIENT_ID, client_secret=CLIENT_SECRET)
+
+    # get the LaMetric devices
     devices = lmn.get_devices()
 
-    # use first device to do some tests
+    # use the first device to do some tests
     lmn.set_device(devices[0])
 
     # prepare a simple frame with an icon and some text

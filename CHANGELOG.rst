@@ -10,3 +10,7 @@ V0.0.2
 V0.0.3
 ^^^^^^
  * added support for firmware 1.75 by alexrockt
+
+V0.0.4
+^^^^^^
+ * enabled authentication via constructor, environment variables and config file

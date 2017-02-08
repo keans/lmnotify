@@ -16,33 +16,47 @@ from .models import AppModel
 # disable InsecureRequestWarning: Unverified HTTPS request is being made.
 requests.packages.urllib3.disable_warnings()
 
+# a quick-fix for Python 2.7 to make raw_input available as input
+try:
+    input = raw_input
+except NameError:
+    pass
+
 
 class LaMetricManager(object):
     """
     simple python class that allows the sending of notification
     messages to the LaMetric (https://www.lametric.com)
     """
-    def __init__(self, config_file=CONFIG_FILE, client_id=None, client_secret=None):
+    def __init__(
+        self, client_id=None, client_secret=None, config_file=CONFIG_FILE
+    ):
+
+        # first try to use client id and client secret from constructor
+        # if not set, try to get details from environment variable
+        self.client_id = client_id or os.environ.get("LAMETRIC_CLIENT_ID")
+        self.client_secret = client_secret or os.environ.get("LAMETRIC_CLIENT_SECRET")
+
+        if (
+            ((client_id is None) or (client_secret is None)) and
+            (config_file is not None)
+        ):
+            # if client_id or client_secret is still not set, but config file
+            # is provided try to load it
+            self.load_config(os.path.expanduser(config_file))
+
+        # just make sure that client_id and client_secret is available
+        # otherwise the use of this module does not make any sense ;-)
+        assert((client_id is not None) and (client_secret is not None))
+
         # set current device to none
         self.dev = None
 
         # store the result of the last call
         self.result = None
 
-        self.client_id = ""
-        self.client_secret = ""
-        self.token = ""
-
         # list of installed apps
         self.available_apps = []
-
-        # if client_id or client_secret are not passed into the constructor
-        if client_id is None or client_secret is None:
-            # load the config i.e. the LaMetric API details
-            self.load_config(os.path.expanduser(config_file))
-        else:
-            self.client_id = client_id
-            self.client_secret = client_secret
 
         # create oauth2 session that is required to access the cloud
         self.oauth = OAuth2Session(
@@ -85,28 +99,37 @@ class LaMetricManager(object):
 
     def load_config(self, config_file):
         """
-        load the config from the config file or create a template
+        load the config from the config file or ask to create a template
         if it is not existing yet
         """
         config = configparser.ConfigParser()
         if not os.path.exists(config_file):
             # config file does not exist => create template
-            config['lametric'] = {'client_id': '', 'client_secret': ''}
-            with open(config_file, "w") as configfile:
-                config.write(configfile)
+            print("The config file '%s' does not exist. " % config_file)
 
-            sys.exit(
-                "The config file '%s' does not exist. An empty "
-                "template has been created. Please fill in your "
-                "credentials. Abort!" % config_file
-            )
+            # ask if empty config file should be created
+            choice = None
+            while choice not in ("y", "n"):
+                choice = input("Create an empty config file? [y/n] ").lower()
+
+            if choice == "y":
+                # create empty config file
+                config['lametric'] = {'client_id': '', 'client_secret': ''}
+                with open(config_file, "w") as f:
+                    config.write(f)
+                print(
+                    "An empty config file has been created. Please set "
+                    "the corresponding LaMetric API credentials."
+                )
+
+            sys.exit("Abort.")
 
         # read config file
         config.read(config_file)
 
         # put config details to internal variables
-        self.client_id = config.get("lametric", "client_id")
-        self.client_secret = config.get("lametric", "client_secret")
+        self.client_id = config.get("lametric", "client_id", None)
+        self.client_secret = config.get("lametric", "client_secret", None)
 
     def set_device(self, dev):
         """

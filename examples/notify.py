@@ -5,6 +5,10 @@ import argparse
 
 from lmnotify import LaMetricManager, Model, SimpleFrame
 
+# set your LaMetric API credentials here!
+CLIENT_ID = "<my_client_id>"
+CLIENT_SECRET = "<my_client_secret>"
+
 
 def main():
     # parse the command line arguments
@@ -19,8 +23,8 @@ def main():
     )
     args = parser.parse_args()
 
-    # create an instance of the LaMetric manager
-    lmn = LaMetricManager()
+    # create an instance of the LaMetricManager
+    lmn = LaMetricManager(client_id=CLIENT_ID, client_secret=CLIENT_SECRET)
 
     # get devices
     devices = lmn.get_devices()

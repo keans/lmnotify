@@ -1,12 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from lmnotify import LaMetricManager
 import time
+
+from lmnotify import LaMetricManager
+
+# set your LaMetric API credentials here!
+CLIENT_ID = "<my_client_id>"
+CLIENT_SECRET = "<my_client_secret>"
 
 
 def main():
-    lmn = LaMetricManager()
+    # create an instance of the LaMetricManager
+    lmn = LaMetricManager(client_id=CLIENT_ID, client_secret=CLIENT_SECRET)
 
     # get devices
     devices = lmn.get_devices()
