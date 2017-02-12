@@ -7,11 +7,15 @@ import configparser
 
 import requests
 from requests.auth import HTTPBasicAuth
-from oauthlib.oauth2 import BackendApplicationClient
-from requests_oauthlib import OAuth2Session
 
 from .const import CONFIG_FILE, CLOUD_URLS, DEVICE_URLS
 from .models import AppModel
+from .auth import CloudAuth, LocalAuth
+from .ssdp import SSDPManager
+
+#
+# TODO: make sure to store API keys and IPs for devices for local use
+#
 
 # disable InsecureRequestWarning: Unverified HTTPS request is being made.
 requests.packages.urllib3.disable_warnings()
@@ -28,26 +32,11 @@ class LaMetricManager(object):
     simple python class that allows the sending of notification
     messages to the LaMetric (https://www.lametric.com)
     """
-    def __init__(
-        self, client_id=None, client_secret=None, config_file=CONFIG_FILE
-    ):
+    def __init__(self, auth):
+        assert(auth in (CloudAuth, LocalAuth))
 
-        # first try to use client id and client secret from constructor
-        # if not set, try to get details from environment variable
-        self.client_id = client_id or os.environ.get("LAMETRIC_CLIENT_ID")
-        self.client_secret = client_secret or os.environ.get("LAMETRIC_CLIENT_SECRET")
-
-        if (
-            ((client_id is None) or (client_secret is None)) and
-            (config_file is not None)
-        ):
-            # if client_id or client_secret is still not set, but config file
-            # is provided try to load it
-            self.load_config(os.path.expanduser(config_file))
-
-        # just make sure that client_id and client_secret is available
-        # otherwise the use of this module does not make any sense ;-)
-        assert((client_id is not None) and (client_secret is not None))
+        # set authentication mechanism
+        self._auth = auth
 
         # set current device to none
         self.dev = None
@@ -57,14 +46,6 @@ class LaMetricManager(object):
 
         # list of installed apps
         self.available_apps = []
-
-        # create oauth2 session that is required to access the cloud
-        self.oauth = OAuth2Session(
-            client=BackendApplicationClient(client_id=self.client_id)
-        )
-
-        # get a current token
-        self.get_token()
 
     def _exec(self, cmd, url, json_data=None):
         """
@@ -82,26 +63,39 @@ class LaMetricManager(object):
         # set basic authentication
         auth = HTTPBasicAuth("dev", self.dev["api_key"])
 
+        # execute HTTP request
         r = None
         if cmd == "GET":
-            r = self.oauth.get(url, auth=auth, verify=False)
+            r = self._auth.session.get(
+                url, auth=auth, verify=False
+            )
 
         elif cmd == "POST":
-            r = self.oauth.post(url, auth=auth, json=json_data, verify=False)
+            r = self._auth.session.post(
+                url, auth=auth, json=json_data, verify=False
+            )
 
         elif cmd == "PUT":
-            r = self.oauth.put(url, auth=auth, json=json_data, verify=False)
+            r = self._auth.session.put(
+                url, auth=auth, json=json_data, verify=False
+            )
 
         elif cmd == "DELETE":
-            r = self.oauth.delete(url, auth=auth, verify=False)
+            r = self._auth.session.delete(
+                url, auth=auth, verify=False
+            )
 
         return r.json()
 
-    def load_config(self, config_file):
+    def load_config(self, config_file=CONFIG_FILE):
         """
         load the config from the config file or ask to create a template
         if it is not existing yet
         """
+        # expand user directory
+        config_file = os.path.expanduser(config_file)
+
+        # prepare config parser
         config = configparser.ConfigParser()
         if not os.path.exists(config_file):
             # config file does not exist => create template
@@ -156,29 +150,31 @@ class LaMetricManager(object):
         return widget_id
 
     # ----- rest api calls on cloud ------
-    def get_token(self):
-        """
-        get current oauth token
-        """
-        self.token = self.oauth.fetch_token(
-            token_url=CLOUD_URLS["get_token"][1],
-            client_id=self.client_id,
-            client_secret=self.client_secret
-        )
-
     def get_user(self):
         """
-        get the user details
+        get the user details via the cloud
         """
-        r = self.oauth.get(CLOUD_URLS["get_user"][1])
+        assert(isinstance(self._auth, CloudAuth))
+
+        r = self.auth.session.get(CLOUD_URLS["get_user"][1])
         return r.json()
 
+    # ----- rest api call on cloud/device
     def get_devices(self):
         """
         get all devices that are linked to the user
         """
-        r = self.oauth.get(CLOUD_URLS["get_devices"][1])
-        return r.json()
+        if isinstance(self._auth, CloudAuth):
+            # --- get devices from the cloud ---
+            r = self.auth.session.get(CLOUD_URLS["get_devices"][1])
+            return r.json()
+
+        else:
+            # --- get devices from the local network using UPNP ---
+            ssdp_manager = SSDPManager()
+            devices = ssdp_manager.get_filtered_devices("LaMetric")
+
+            return devices
 
     # ----- rest api calls on device ------
     def get_endpoint_map(self):
