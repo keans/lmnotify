@@ -3,7 +3,7 @@
 
 import argparse
 
-from lmnotify import LaMetricManager, Model, SimpleFrame
+from lmnotify import LaMetricManager, Model, SimpleFrame, CloudAuth
 
 # set your LaMetric API credentials here!
 CLIENT_ID = "<my_client_id>"
@@ -23,8 +23,11 @@ def main():
     )
     args = parser.parse_args()
 
+    # prepare authentication
+    cloud_auth = CloudAuth(CLIENT_ID, CLIENT_SECRET)
+
     # create an instance of the LaMetricManager
-    lmn = LaMetricManager(client_id=CLIENT_ID, client_secret=CLIENT_SECRET)
+    lmn = LaMetricManager(auth=cloud_auth)
 
     # get devices
     devices = lmn.get_devices()

@@ -2,13 +2,13 @@
 # -*- coding: utf-8 -*-
 
 import os
-import sys
-import configparser
+import json
+import codecs
 
 import requests
 from requests.auth import HTTPBasicAuth
 
-from .const import CONFIG_FILE, CLOUD_URLS, DEVICE_URLS
+from .const import CLOUD_URLS, DEVICE_URLS, DEVICES_FILENAME
 from .models import AppModel
 from .auth import CloudAuth, LocalAuth
 from .ssdp import SSDPManager
@@ -20,12 +20,6 @@ from .ssdp import SSDPManager
 # disable InsecureRequestWarning: Unverified HTTPS request is being made.
 requests.packages.urllib3.disable_warnings()
 
-# a quick-fix for Python 2.7 to make raw_input available as input
-try:
-    input = raw_input
-except NameError:
-    pass
-
 
 class LaMetricManager(object):
     """
@@ -33,7 +27,7 @@ class LaMetricManager(object):
     messages to the LaMetric (https://www.lametric.com)
     """
     def __init__(self, auth):
-        assert(auth in (CloudAuth, LocalAuth))
+        assert(isinstance(auth, CloudAuth) or isinstance(auth, LocalAuth))
 
         # set authentication mechanism
         self._auth = auth
@@ -87,44 +81,6 @@ class LaMetricManager(object):
 
         return r.json()
 
-    def load_config(self, config_file=CONFIG_FILE):
-        """
-        load the config from the config file or ask to create a template
-        if it is not existing yet
-        """
-        # expand user directory
-        config_file = os.path.expanduser(config_file)
-
-        # prepare config parser
-        config = configparser.ConfigParser()
-        if not os.path.exists(config_file):
-            # config file does not exist => create template
-            print("The config file '%s' does not exist. " % config_file)
-
-            # ask if empty config file should be created
-            choice = None
-            while choice not in ("y", "n"):
-                choice = input("Create an empty config file? [y/n] ").lower()
-
-            if choice == "y":
-                # create empty config file
-                config['lametric'] = {'client_id': '', 'client_secret': ''}
-                with open(config_file, "w") as f:
-                    config.write(f)
-                print(
-                    "An empty config file has been created. Please set "
-                    "the corresponding LaMetric API credentials."
-                )
-
-            sys.exit("Abort.")
-
-        # read config file
-        config.read(config_file)
-
-        # put config details to internal variables
-        self.client_id = config.get("lametric", "client_id", None)
-        self.client_secret = config.get("lametric", "client_secret", None)
-
     def set_device(self, dev):
         """
         set the current device (that will be used for API calls)
@@ -156,25 +112,29 @@ class LaMetricManager(object):
         """
         assert(isinstance(self._auth, CloudAuth))
 
-        r = self.auth.session.get(CLOUD_URLS["get_user"][1])
+        r = self._auth.session.get(CLOUD_URLS["get_user"][1])
         return r.json()
+
+    def save_devices(self, devices_filename=DEVICES_FILENAME):
+        """
+        save devices obtained from LaMetric cloud to file
+        """
+        assert(isinstance(self._auth, CloudAuth))
+
+        devices_keys_filename = os.path.expanduser(devices_filename)
+        with codecs.open(devices_keys_filename, "wb", "utf-8") as f:
+            json.dump(self.get_devices(), f)
 
     # ----- rest api call on cloud/device
     def get_devices(self):
         """
         get all devices that are linked to the user
         """
-        if isinstance(self._auth, CloudAuth):
-            # --- get devices from the cloud ---
-            r = self.auth.session.get(CLOUD_URLS["get_devices"][1])
-            return r.json()
+        assert(isinstance(self._auth, CloudAuth))
 
-        else:
-            # --- get devices from the local network using UPNP ---
-            ssdp_manager = SSDPManager()
-            devices = ssdp_manager.get_filtered_devices("LaMetric")
+        r = self._auth.session.get(CLOUD_URLS["get_devices"][1])
 
-            return devices
+        return r.json()
 
     # ----- rest api calls on device ------
     def get_endpoint_map(self):
@@ -183,6 +143,30 @@ class LaMetricManager(object):
         """
         cmd, url = DEVICE_URLS["get_endpoint_map"]
         return self._exec(cmd, url)
+
+    def discover_devices(self):
+        """
+        returns all LaMetric devices discovered via UPNP
+        """
+        ssdp_manager = SSDPManager()
+
+        devices = ssdp_manager.get_filtered_devices("LaMetric")
+
+        return devices
+
+    def load_devices(self, devices_filename=DEVICES_FILENAME):
+        """
+        load devices from file (makes only sense on LocalAuth)
+        """
+        assert(isinstance(self._auth, LocalAuth))
+
+        devices_keys_filename = os.path.expanduser(devices_filename)
+        devices = []
+        if os.path.exists(devices_keys_filename):
+            with codecs.open(devices_keys_filename, "rb", "utf-8") as f:
+                devices = json.load(f)
+
+        return devices
 
     def get_device_state(self):
         """

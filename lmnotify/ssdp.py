@@ -77,7 +77,7 @@ class SSDPManager(object):
     """
 
     def discover_upnp_devices(
-        self, st="upnp:rootdevice", timeout=2, mx=3, retries=1
+        self, st="upnp:rootdevice", timeout=2, mx=1, retries=1
     ):
         """
         sends an SSDP discovery packet to the network and collects
@@ -113,13 +113,15 @@ class SSDPManager(object):
 
         return devices
 
-    def get_filtered_devices(self, model_name, timeout=2):
+    def get_filtered_devices(
+        self, model_name, device_types="upnp:rootdevice", timeout=2
+    ):
         """
         returns a dict of devices that contain the given model name
         """
 
         # get list of all UPNP devices in the network
-        upnp_devices = self.discover_upnp_devices()
+        upnp_devices = self.discover_upnp_devices(st=device_types)
 
         # go through all UPNP devices and filter wanted devices
         filtered_devices = collections.defaultdict(dict)

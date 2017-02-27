@@ -1,6 +1,9 @@
 # default config file
 CONFIG_FILE = "~/.lmconfig"
 
+# default devices filename
+DEVICES_FILENAME = "~/.lmdevices"
+
 # URLs that are applied to the cloud
 BASE_URL = "https://developer.lametric.com"
 CLOUD_URLS = {
