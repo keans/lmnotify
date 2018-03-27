@@ -283,7 +283,6 @@ class LaMetricManager(object):
         json_data = {
             "volume": volume,
         }
-
         return self._exec(cmd, url, json_data=json_data)
 
     def get_bluetooth_state(self):
