@@ -7,6 +7,7 @@ import xml.etree.ElementTree as ET
 
 import requests
 
+
 #  SSDP multicast address for device discovery
 SSDP_MULTICAST_ADDR = ("239.255.255.250", 1900)
 
@@ -105,7 +106,7 @@ class SSDPManager(object):
             try:
                 while True:
                     # parse response and store it in dict
-                    r = SSDPResponse(s.recvfrom(1024))
+                    r = SSDPResponse(s.recvfrom(65507))
                     devices[r.usn] = r
 
             except socket.timeout:
@@ -169,6 +170,9 @@ class SSDPManager(object):
                                     attr
                                 ] = el.text.strip()
 
+            except ET.ParseError:
+                # just skip devices that are invalid xml
+                pass
             except requests.exceptions.ConnectTimeout:
                 # just skip devices that are not replying in time
                 print("Timeout for '%s'. Skipping." % dev.location)

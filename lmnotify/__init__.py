@@ -1,8 +1,8 @@
 __all__ = [
     "LaMetricManager", "SimpleFrame", "GoalFrame", "SpikeChart",
-    "Sound", "Model", "CloudAuth", "LocalAuth"
+    "Sound", "Model", "CloudSession", "LocalSession"
 ]
 
 from .lmnotify import LaMetricManager
 from .models import SimpleFrame, GoalFrame, SpikeChart, Sound, Model
-from .auth import CloudAuth, LocalAuth
+from .session import CloudSession, LocalSession
