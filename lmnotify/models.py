@@ -23,6 +23,9 @@ class AppModel(object):
             if property in vars(self):
                 setattr(self, property, data[property])
 
+    def __repr__(self):
+        return "{} ({}) V{}".format(self.package, self.vendor, self.version)
+
 
 class Frame(object):
     """
